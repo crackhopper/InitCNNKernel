@@ -3,3 +3,4 @@
 *.modeldef
 .ipynb_checkpoints/
 *~
+*.ipynb
