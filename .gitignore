@@ -1,0 +1,5 @@
+*.pyc
+*.model
+*.modeldef
+.ipynb_checkpoints/
+*~
