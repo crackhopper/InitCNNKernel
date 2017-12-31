@@ -7,6 +7,7 @@ from tfs.core.monitor import DefaultMonitor
 from tfs.core.optimizer import DefaultOptimizer
 from tfs.core.layer import func_table,Layer
 from tfs.core.elem import Component
+from tfs.core.learning_rate import DefaultLearningRate
 import pickle
 import new
 
@@ -48,6 +49,8 @@ class Network(object):
     self.regularizer =DefaultRegularizer(self)
     self.monitor = {}
     self.monitor['default']=DefaultMonitor(self)
+    # learning rate must precede the construction of optimizer
+    self.lr = DefaultLearningRate(self,0.001)
     self._optimizer = DefaultOptimizer(self)
 
     # this must be set when define a network
@@ -66,19 +69,25 @@ class Network(object):
     return [
       self.in_shape,
       self.loss_input_layer_name,
+      self.lr.to_pickle(),
       self.optimizer.to_pickle(),
       self.losser.to_pickle(),
-      self.regularizer.to_pickle()
+      self.regularizer.to_pickle(),
+      self.data_format
     ]
 
   def restore(self,objs):
     inshape = objs[0]
     self.loss_input_layer_name = objs[1]
-    self.optimizer = Component.restore(objs[2],self)
-    self.losser = Component.restore(objs[3],self)
-    self.regularizer = Component.restore(objs[4],self)
+    self.lr = Component.restore(objs[2],self)
+    self.optimizer = Component.restore(objs[3],self)
+    self.losser = Component.restore(objs[4],self)
+    self.regularizer = Component.restore(objs[5],self)
+    self.data_format = objs[6]
+
     if inshape:
       self.build(inshape)
+    
 
   def _init_graph_sess(self):
     self._graph = tf.Graph()
@@ -295,10 +304,9 @@ class Network(object):
     train_set = dataset.train
     test_set = dataset.test
     train_set.before_iter()
-    self.i_step = 0
+    self.i_step = self.run(self.lr.step)
     self.n_epoch = 0
     while True:
-      self.i_step += 1
       self.n_epoch = train_set.epochs_completed
       X,y = train_set.next_batch(batch_size,shuffle=shuffle_epoch)
       self.step(X,y,self.i_step)
@@ -308,6 +316,7 @@ class Network(object):
         break
       if self.i_step >= max_step:
         break
+      self.i_step += 1
     return self
 
   @property
@@ -330,6 +339,8 @@ class Network(object):
     return op
 
   def step(self,X,y,step):
+    stepop=self.lr.step.assign(step)
+    self.run(stepop)
     self.run(self.train_op,feed_dict={self.input:X,self.true_output:y})
 
   def predict(self,X):

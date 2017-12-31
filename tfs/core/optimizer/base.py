@@ -2,12 +2,15 @@ import tensorflow as tf
 import numpy as np
 import inspect
 from tfs.core.elem import Param,Component
-from tfs.core.learning_rate import DefaultLearningRate
 
 class Optimizer(Component):
   def __init__(self,net,**kwargs):
     super(Optimizer,self).__init__(net,**kwargs)
     self._variables = None
+
+  @property
+  def lr(self):
+    return self.net.lr
 
   def __str__(self):
     plist = [
@@ -29,8 +32,8 @@ class Optimizer(Component):
                         colocate_gradients_with_ops,
                         grad_loss)
 
-  def apply_gradients(self,grads_and_vars,global_step=None,name=None):
-    op = self.opt.apply_gradients(grads_and_vars,global_step,name)
+  def apply_gradients(self,grads_and_vars,name=None):
+    op = self.opt.apply_gradients(grads_and_vars,None,name)
     self._init_variable_table(grads_and_vars)
     return op
 
@@ -49,28 +52,15 @@ class Optimizer(Component):
       raise ValueError("The optimize op isn't built")
     return self._variables
 
-class OptimizerWithLearningRate(Optimizer):
-  def __init__(self,net,learning_rate,**kwargs):
-    super(OptimizerWithLearningRate,self).__init__(net,learning_rate=learning_rate,**kwargs)
+class GradientDecentOptimizer(Optimizer):
+  def __init__(self,net):
+    super(GradientDecentOptimizer,self).__init__(net)
+    self.opt = tf.train.GradientDescentOptimizer(self.lr.variable)
 
-  def apply_gradients(self,grads_and_vars,name=None):
-    op = self.opt.apply_gradients(grads_and_vars,self.param.learning_rate.global_step,name)
-    self._init_variable_table(grads_and_vars)
-    return op
-
-class GradientDecentOptimizer(OptimizerWithLearningRate):
-  def __init__(self,net,init_learning_rate=0.001,print_names=['learning_rate'],
-               LR_Class=DefaultLearningRate):
-    learning_rate=LR_Class(net,init_learning_rate)
-    super(GradientDecentOptimizer,self).__init__(net,learning_rate,print_names=['learning_rate'])
-    self.opt = tf.train.GradientDescentOptimizer(learning_rate.value)
-
-class AdamOptimizer(OptimizerWithLearningRate):
-  def __init__(self,net,init_learning_rate=0.001,print_names=['learning_rate'],
-               LR_Class=DefaultLearningRate):
-    learning_rate=LR_Class(net,init_learning_rate)
-    super(AdamOptimizer,self).__init__(net,learning_rate,print_names=['learning_rate'])
-    self.opt = tf.train.AdamOptimizer(learning_rate.value)
+class AdamOptimizer(Optimizer):
+  def __init__(self,net):
+    super(AdamOptimizer,self).__init__(net)
+    self.opt = tf.train.AdamOptimizer(self.lr.variable)
 
   def _init_variable_table(self,grads_and_vars):
     super(AdamOptimizer,self)._init_variable_table(grads_and_vars)
