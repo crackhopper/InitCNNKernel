@@ -50,16 +50,17 @@ class LayerInputVarMonitor(Monitor):
 
 
 class SaveEpochMonitor(Monitor):
-  def __init__(self,netobj,filename,interval=10):
+  def __init__(self,netobj,filename,epoch_interval=1,interval=10):
     super(SaveEpochMonitor,self).__init__(netobj,interval)
     self.lastepoch = -1
     self.filename  = filename
+    self.epoch_interval = epoch_interval
 
   def check(self,train,test,step,epoch):
-    if self.lastepoch == epoch:
+    if self.lastepoch >= epoch:
       return False
     else:
-      self.lastepoch = epoch
+      self.lastepoch += self.epoch_interval
       return True
 
   def work(self,train,test,step,epoch):

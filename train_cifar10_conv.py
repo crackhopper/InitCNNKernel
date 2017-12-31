@@ -10,8 +10,8 @@ dataset.transpose([0,2,3,1]) # for cpu testing, we use NHWC data format
 
 epoch = 100
 bsize = 500
-net.add_monitor('SaveNet',SaveEpochMonitor(net,modelfile))
 
+net.add_monitor('SaveNet',SaveEpochMonitor(net,modelfile,epoch_interval=10))
 net.lr = ExponentialDecay_LR(net,0.001,0,500,0.9)
 net.optimizer = AdamOptimizer(net)
 net.build()
