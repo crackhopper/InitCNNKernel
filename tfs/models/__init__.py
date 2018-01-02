@@ -43,19 +43,15 @@ class ConvNet(CustomNetwork):
   def setup(self):
     self.default_in_shape = [None,32,32,3]
     (self.net_def
-     .conv2d([5, 5], 256, [1,1], name='conv1')
+     .conv2d([5, 5], 64, [1,1], name='conv1')
      .maxpool([3, 3], [2,2] , name='pool1')
-     .lrn(2, 2e-05, 0.75, name='norm1')
-     .conv2d([5,5], 128, [1,1], name='conv2')
+     .lrn(4, 0.001/9.0, 0.75, bias=1.0, name='norm1')
+     .conv2d([5,5], 64, [1,1], name='conv2')
      .maxpool([3, 3], [2, 2],  name='pool2')
-     .lrn(2, 2e-05, 0.75, name='norm2')
-     .conv2d([3, 3], 128, [1, 1], name='conv3')
-     .conv2d([3, 3], 128, [1, 1], name='conv4')
-     .conv2d([3, 3], 64, [1, 1], name='conv5')
-     .maxpool([3, 3], [2, 2], name='pool5')
-     .fc(512, name='fc6')
-     .fc(256, name='fc7')
-     .fc(10, activation=False, name='fc8')
+     .lrn(4, 0.001/9.0, 0.75, bias=1.0, name='norm2')
+     .fc(384, name='fc3')
+     .fc(192, name='fc4')
+     .fc(10, activation=False, name='fc5')
      .softmax(name='prob'))
-    self.loss_input_layer_name = 'fc8'
+    self.loss_input_layer_name = 'fc5'
 
