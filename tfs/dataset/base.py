@@ -128,6 +128,18 @@ class DataSubset(object):
     self._epochs_completed=0
     self._index_in_epoch=0
 
+  def one_epoch(self, batch_size):
+    _start = 0
+    _end = batch_size
+    while _end!=self.num_examples:
+      yield self._data[_start:_end],self._labels[_start:_end]
+      _start = _end
+      _end = _end+batch_size
+      if _end > self.num_examples:
+        _end = self.num_examples
+    yield self._data[_start:_end],self._labels[_start:_end]
+
+
   def next_batch(self, batch_size, shuffle=True):
     """Return the next `batch_size` examples from this data set."""
     assert batch_size < self.num_examples

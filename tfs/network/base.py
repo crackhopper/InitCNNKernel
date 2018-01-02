@@ -375,11 +375,17 @@ class Network(object):
     return _func
 
   def score(self,datasubset):
-    y_pred = self.predict(datasubset.data)
-    y_pred = np.argmax(y_pred,1)
-    y_true = datasubset.labels
-    y_true = np.argmax(y_true,1)
-    return metrics.accuracy_score(y_true,y_pred)
+    batch_size = 256
+    n = 0
+    n_right = 0
+    for X,y in datasubset.one_epoch(batch_size):
+      y_pred = self.predict(X)
+      y_pred = np.argmax(y_pred,1)
+      y_true = y
+      y_true = np.argmax(y_true,1)
+      n += len(y_true)
+      n_right += sum(y_pred==y_true)
+    return n_right * 1.0 / n
 
   def measure_loss(self,X,y):
     if self.num_gpu==0:
