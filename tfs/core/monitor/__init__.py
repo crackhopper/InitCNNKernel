@@ -31,11 +31,15 @@ class Monitor(object):
 
 class DefaultMonitor(Monitor):
   def work(self,train,test,step,epoch):
-    acc = self.net.score(test)
     X,y = train.current_batch
     loss = self.net.measure_loss(X,y)
     lr = self.net.lr.value
-    print 'lr:%s, step %d. loss %f, score:%f'%(lr,step,loss,acc)
+    print 'lr:%s, step %d. loss %f'%(lr,step,loss)
+
+class DefaultMonitor(Monitor):
+  def work(self,train,test,step,epoch):
+    acc = self.net.score(test)
+    print 'step %d, epoch %d, score:%f'%(step,epoch,acc)
 
 
 class LayerInputVarMonitor(Monitor):

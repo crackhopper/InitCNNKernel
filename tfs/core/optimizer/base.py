@@ -33,7 +33,7 @@ class Optimizer(Component):
                         grad_loss)
 
   def apply_gradients(self,grads_and_vars,name=None):
-    op = self.opt.apply_gradients(grads_and_vars,None,name)
+    op = self.opt.apply_gradients(grads_and_vars,self.lr.step,name)
     self._init_variable_table(grads_and_vars)
     return op
 

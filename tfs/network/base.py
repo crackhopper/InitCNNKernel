@@ -339,8 +339,6 @@ class Network(object):
     return op
 
   def step(self,X,y,step):
-    stepop=self.lr.step.assign(step)
-    self.run(stepop)
     self.run(self.train_op,feed_dict={self.input:X,self.true_output:y})
 
   def predict(self,X):
