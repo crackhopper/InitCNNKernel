@@ -28,6 +28,12 @@ class DataSubset(object):
     self._in_cv = False
     self.before_iter()
 
+  def standardize_per_sample(self):
+    shape = self.data.shape
+    dr = self.data.reshape([shape[0],-1])
+    sdr = ((dr.T - np.mean(dr,axis=1))/np.std(dr,axis=1)).T
+    self.data = sdr.reshape(shape)
+
   def cross_validation_loop(self,n_fold):
     """return a iterator
     each time return a split for cross validation
@@ -239,4 +245,7 @@ class Dataset(object):
     tfs.g.config.dataset.setdir(self,_dir)
     self._data_dir = _dir
 
+  def standardize_per_sample(self):
+    self.train.standardize_per_sample()
+    self.test.standardize_per_sample()
 
