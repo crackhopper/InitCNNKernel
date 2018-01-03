@@ -1,4 +1,4 @@
-from tfs.core.monitor import SaveEpochMonitor
+from tfs.core.monitor import SaveEpochMonitor,ScoreMonitor
 from tfs.models import ConvNet
 from tfs.dataset import Cifar10
 from tfs.core.learning_rate import ExponentialDecay_LR
@@ -13,6 +13,7 @@ epoch = 200
 bsize = 128
 
 net.add_monitor('SaveNet',SaveEpochMonitor(net,modelfile,epoch_interval=10))
+net.add_monitor('ScoreNet',ScoreMonitor(net))
 net.lr = ExponentialDecay_LR(net,0.1,0,100000,0.1)
 net.optimizer = AdamOptimizer(net)
 net.build()

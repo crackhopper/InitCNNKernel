@@ -36,7 +36,12 @@ class DefaultMonitor(Monitor):
     lr = self.net.lr.value
     print 'lr:%s, step %d. loss %f'%(lr,step,loss)
 
-class DefaultMonitor(Monitor):
+class ScoreMonitor(Monitor):
+  def __init__(self,netobj,interval=1000):
+    self.net = netobj
+    self.interval = interval
+    self.init()
+
   def work(self,train,test,step,epoch):
     acc = self.net.score(test)
     print 'step %d, epoch %d, score:%f'%(step,epoch,acc)
