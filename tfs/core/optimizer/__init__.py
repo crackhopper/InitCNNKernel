@@ -1,2 +1,0 @@
-from base import Optimizer,DefaultOptimizer
-from base import GradientDecentOptimizer,AdamOptimizer
