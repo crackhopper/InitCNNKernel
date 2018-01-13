@@ -23,7 +23,7 @@ INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 batch_size=128
 log_frequency = 10
 data_dir= '../../tfs_data/cifar10/cifar-10-batches-bin'
-train_dir= '../../tfs_data/cifar10_train0'
+train_dir= '../../tfs_data/cifar10_train2'
 
 def read_cifar10(filename_queue):
   class CIFAR10Record(object):
@@ -155,7 +155,6 @@ def inputs(eval_data):
                                          shuffle=False)
 
 
-'''
 def _variable_on_cpu(name, shape, initializer):
   with tf.device('/cpu:0'):
     dtype = tf.float32
@@ -239,7 +238,7 @@ def loss(logits, labels):
   tf.add_to_collection('losses', cross_entropy_mean)
 
   return tf.add_n(tf.get_collection('losses'), name='total_loss')
-'''
+
 def get_train_op(total_loss, global_step):
   num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / batch_size
   decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
@@ -303,126 +302,5 @@ def train():
       while not mon_sess.should_stop():
         mon_sess.run(train_op)
 
-from tfs.network import Network,CustomNetwork
-from tfs.core.learning_rate import ExponentialDecay_LR
-from tfs.core.optimizer import AdamOptimizer,GradientDecentOptimizer
-from tfs.dataset import Cifar10
-dataset = Cifar10()
-dataset.transpose([0,2,3,1]) # for cpu testing, we use NHWC data format
-dataset.standardize_per_sample()
-
-class ConvNet(CustomNetwork):
-  def setup(self):
-    self.default_in_shape = [None,IMAGE_SIZE,IMAGE_SIZE,3]
-    (self.net_def
-     .conv2d([5, 5], 64, [1,1], name='conv1')
-     .maxpool([3, 3], [2,2] , name='pool1')
-     .lrn(4, 0.001/9.0, 0.75, bias=1.0, name='norm1')
-     .conv2d([5,5], 64, [1,1], name='conv2')
-     .maxpool([3, 3], [2, 2],  name='pool2')
-     .lrn(4, 0.001/9.0, 0.75, bias=1.0, name='norm2')
-     .fc(384, name='fc3')
-     .fc(192, name='fc4')
-     .fc(10, activation=False, name='fc5')
-     .softmax(name='prob'))
-    self.loss_input_layer_name = 'fc5'
-
-net = ConvNet()
-
-def get_train_op():
-  num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / batch_size
-  decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-  net.lr = ExponentialDecay_LR(net,INITIAL_LEARNING_RATE,0,decay_steps,LEARNING_RATE_DECAY_FACTOR)
-  net.optimizer = GradientDecentOptimizer(net)
-  net.build()
-  return net._get_train_op()
-
-from sklearn import preprocessing
-
-def train():
-  with net._graph.as_default():
-    global_step = tf.train.get_or_create_global_step()
-    with tf.device('/cpu:0'):
-      images, labels = distorted_inputs()
-
-    train_op = get_train_op()
-
-    class _LoggerHook(tf.train.SessionRunHook):
-      def begin(self):
-        self._step = -1
-        self._start_time = time.time()
-
-      def before_run(self, run_context):
-        self._step += 1
-        return tf.train.SessionRunArgs(lss)  # Asks for loss value.
-
-      def after_run(self, run_context, run_values):
-        if self._step % log_frequency == 0:
-          current_time = time.time()
-          duration = current_time - self._start_time
-          self._start_time = current_time
-
-          loss_value = run_values.results
-          examples_per_sec = log_frequency * batch_size / duration
-          sec_per_batch = float(duration / log_frequency)
-
-          format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
-                        'sec/batch)')
-          print (format_str % (datetime.now(), self._step, loss_value,
-                               examples_per_sec, sec_per_batch))
-
-    with tf.Session() as sess:
-      net._initialize()
-      vars = net.optimizer.variables
-      net.run(tf.variables_initializer(vars.values()))
-
-      coord = tf.train.Coordinator()
-      threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-
-      i,l = sess.run([images,labels])
-      lb = preprocessing.LabelBinarizer(0, 1, False)
-      lb.fit(l)
-
-      coord.request_stop()
-      coord.join(threads)
-
-    with net.sess as sess:
-      net._initialize()
-      vars = net.optimizer.variables
-      net.run(tf.variables_initializer(vars.values()))
-
-      coord = tf.train.Coordinator()
-      threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-
-      count = 0
-      while True:
-        count +=1
-        i,l = sess.run([images,labels])
-        l2 = lb.transform(l)
-        lss = net.loss
-        lossval,_ = sess.run([lss,train_op],feed_dict={net.input:i,net.true_output:l2})
-        if(count%10==0):
-          print('step:%d, loss:'%count,lossval)
-
-        if(count%100==0):
-          print('accuracy score:',net.score2(dataset.test,lb))
-
-      coord.request_stop()
-      coord.join(threads)
-
 train()
 
-'''
-with tf.device('/cpu:0'):
-  images, labels = distorted_inputs()
-with tf.Session() as sess:
-  coord = tf.train.Coordinator()
-  threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-
-  i,l = sess.run([images,labels])
-  print(i.shape,l.shape)
-
-  coord.request_stop()
-  coord.join(threads)
-
-'''
