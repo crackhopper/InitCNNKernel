@@ -58,8 +58,6 @@ parser.add_argument('--data_dir', type=str, default='../tfs_data/cifar10',
 parser.add_argument('--use_fp16', type=bool, default=False,
                     help='Train the model using fp16.')
 
-FLAGS = parser.parse_args()
-
 # Global constants describing the CIFAR-10 data set.
 IMAGE_SIZE = cifar10_input.IMAGE_SIZE
 NUM_CLASSES = cifar10_input.NUM_CLASSES
@@ -402,3 +400,7 @@ def maybe_download_and_extract():
   extracted_dir_path = os.path.join(dest_directory, 'cifar-10-batches-bin')
   if not os.path.exists(extracted_dir_path):
     tarfile.open(filepath, 'r:gz').extractall(dest_directory)
+
+if __name__=='__main__':
+  FLAGS = parser.parse_args()
+
