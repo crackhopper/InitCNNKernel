@@ -56,20 +56,39 @@ class ConvNet(CustomNetwork):
      .softmax(name='prob'))
     self.loss_input_layer_name = 'fc5'
 
-net = ConvNet()
-g = net.graph
-net.build()
+g = tf.Graph()
+tbl = {}
 
 with g.as_default():
   ckptfile = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
-  print(ckptfile)
-  saver = tf.train.Saver()
-  saver.restore(net.sess, ckptfile)
+  with tf.Session() as sess:
+    saver = tf.train.import_meta_graph(ckptfile+'.meta')
+    saver.restore(sess, ckptfile)
+    def fill_table(key):
+      tbl[key] = sess.run(g.get_tensor_by_name(key))
+    fill_table('conv1/weights:0')
+    fill_table('conv1/biases:0')
+    fill_table('conv2/weights:0')
+    fill_table('conv2/biases:0')
+    fill_table('fc3/weights:0')
+    fill_table('fc3/biases:0')
+    fill_table('fc4/weights:0')
+    fill_table('fc4/biases:0')
+    fill_table('fc5/weights:0')
+    fill_table('fc5/biases:0')
+
+
+net = ConvNet()
+g = net.graph
+
+with g.as_default():
+  net.build()
+  init_op=net.initializer.op_by_value_table(tbl)
+  net.run(init_op)
 
   logits = net.predict(dataset.test.data)
   top_k_op = tf.nn.in_top_k(logits, dataset.test.labels, 1)
   res = net.sess.run(top_k_op)
-
   print('accuracy score:',sum(res)/len(res))
 
 

@@ -58,6 +58,27 @@ parser.add_argument('--data_dir', type=str, default='../tfs_data/cifar10',
 parser.add_argument('--use_fp16', type=bool, default=False,
                     help='Train the model using fp16.')
 
+parser.add_argument('--eval_dir', type=str, default='../tfs_data/cifar10_eval',
+                    help='Directory where to write event logs.')
+
+parser.add_argument('--eval_data', type=str, default='test',
+                    help='Either `test` or `train_eval`.')
+
+parser.add_argument('--checkpoint_dir', type=str, default='../tfs_data/cifar10_train',
+                    help='Directory where to read model checkpoints.')
+
+parser.add_argument('--eval_interval_secs', type=int, default=60*5,
+                    help='How often to run the eval.')
+
+parser.add_argument('--num_examples', type=int, default=10000,
+                    help='Number of examples to run.')
+
+parser.add_argument('--run_once', type=bool, default=False,
+                    help='Whether to run eval only once.')
+
+
+FLAGS = parser.parse_args()
+
 # Global constants describing the CIFAR-10 data set.
 IMAGE_SIZE = cifar10_input.IMAGE_SIZE
 NUM_CLASSES = cifar10_input.NUM_CLASSES
@@ -241,7 +262,7 @@ def inference(images):
                          strides=[1, 2, 2, 1], padding='SAME', name='pool2')
 
   # local3
-  with tf.variable_scope('local3') as scope:
+  with tf.variable_scope('fc3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
     reshape = tf.reshape(pool2, [FLAGS.batch_size, -1])
     dim = reshape.get_shape()[1].value
@@ -252,7 +273,7 @@ def inference(images):
     _activation_summary(local3)
 
   # local4
-  with tf.variable_scope('local4') as scope:
+  with tf.variable_scope('fc4') as scope:
     weights = _variable_with_weight_decay('weights', shape=[384, 192],
                                           stddev=0.04, wd=0.004)
     biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
@@ -263,7 +284,7 @@ def inference(images):
   # We don't apply softmax here because
   # tf.nn.sparse_softmax_cross_entropy_with_logits accepts the unscaled logits
   # and performs the softmax internally for efficiency.
-  with tf.variable_scope('softmax_linear') as scope:
+  with tf.variable_scope('fc5') as scope:
     weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
                                           stddev=1/192.0, wd=0.0)
     biases = _variable_on_cpu('biases', [NUM_CLASSES],
@@ -401,6 +422,4 @@ def maybe_download_and_extract():
   if not os.path.exists(extracted_dir_path):
     tarfile.open(filepath, 'r:gz').extractall(dest_directory)
 
-if __name__=='__main__':
-  FLAGS = parser.parse_args()
 
